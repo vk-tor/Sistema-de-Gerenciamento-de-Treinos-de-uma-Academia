@@ -1,0 +1,170 @@
+// Define uma constante para o nome do arquivo de persistência
+DEFINIR NOME_ARQUIVO = "dados_academia.json"
+
+// --- Funções de Manipulação de Dados ---
+
+FUNÇÃO carregar_dados():
+    // Tenta carregar os dados do arquivo JSON
+    SE ARQUIVO NOME_ARQUIVO não existe ENTÃO
+        RETORNE [] // Retorna uma lista vazia se o arquivo for novo
+    FIM_SE
+
+    TENTAR:
+        ABRIR NOME_ARQUIVO para Leitura
+        dados = LER_JSON(arquivo)
+        FECHAR arquivo
+        RETORNE dados
+    CAPTURAR ERRO (Ex: JSON inválido ou arquivo vazio):
+        RETORNE [] // Retorna lista vazia se o arquivo estiver corrompido
+    FIM_TENTAR
+FIM_FUNÇÃO
+
+PROCEDIMENTO salvar_dados(lista_fichas):
+    // Salva a lista principal no arquivo JSON
+    ABRIR NOME_ARQUIVO para Escrita
+    ESCREVER_JSON(lista_fichas) no arquivo (com formatação legível)
+    FECHAR arquivo
+    ESCREVA "Dados salvos com sucesso!"
+FIM_PROCEDIMENTO
+
+// --- Funções de Lógica do Aplicativo ---
+
+PROCEDIMENTO registrar_ficha(lista_principal_fichas):
+    ESCREVA "--- Cadastro de Nova Ficha ---"
+    
+    // Coleta dados da ficha
+    LEIA nome_aluno
+    LEIA objetivo
+    LEIA data_inicio
+
+    // Cria uma LISTA interna para os exercícios
+    CRIAR exercicios_lista = []
+    ESCREVA "--- Adicionar Exercícios ---"
+
+    ENQUANTO VERDADEIRO:
+        LEIA nome_ex (ou digite 'fim' para parar)
+        
+        SE nome_ex (em minúsculo) == 'fim' ENTÃO
+            PARE_LOOP // Interrompe o loop
+        FIM_SE
+
+        LEIA series_reps
+
+        // Cria uma TUPLA para o exercício
+        CRIAR exercicio_tupla = (nome_ex, series_reps)
+        
+        // Adiciona a TUPLA na LISTA de exercícios
+        ADICIONAR exercicio_tupla em exercicios_lista
+        ESCREVA "Exercício adicionado."
+    FIM_ENQUANTO
+
+    // Cria um DICIONÁRIO (ou Mapa) para a nova ficha
+    CRIAR nova_ficha = {
+        "nome": nome_aluno,
+        "objetivo": objetivo,
+        "data_inicio": data_inicio,
+        "exercicios": exercicios_lista // Lista de Tuplas
+    }
+
+    // Adiciona o DICIONÁRIO à LISTA principal
+    ADICIONAR nova_ficha em lista_principal_fichas
+    ESCREVA "Ficha registrada com sucesso!"
+FIM_PROCEDIMENTO
+
+PROCEDIMENTO consultar_ficha(lista_principal_fichas):
+    ESCREVA "--- Consultar Ficha por Nome ---"
+    
+    SE lista_principal_fichas está vazia ENTÃO
+        ESCREVA "Nenhuma ficha cadastrada para consultar."
+        RETORNE // Termina o procedimento
+    FIM_SE
+
+    LEIA nome_busca (converter para minúsculo)
+    encontrado = FALSO
+
+    // Itera pela LISTA principal de fichas (dicionários)
+    PARA CADA ficha EM lista_principal_fichas:
+        SE ficha["nome"] (em minúsculo) == nome_busca ENTÃO
+            ESCREVA "--- Ficha Encontrada ---"
+            ESCREVA "Aluno: ", ficha["nome"]
+            ESCREVA "Objetivo: ", ficha["objetivo"]
+            ESCREVA "Data de Início: ", ficha["data_inicio"]
+            ESCREVA "Exercícios:"
+
+            // Itera sobre a LISTA interna de TUPLAS
+            PARA CADA (exercicio, repeticoes) EM ficha["exercicios"]:
+                ESCREVA "  - ", exercicio, ": ", repeticoes
+            FIM_PARA
+            
+            encontrado = VERDADEIRO
+        FIM_SE
+    FIM_PARA
+
+    SE encontrado == FALSO ENTÃO
+        ESCREVA "Nenhuma ficha encontrada para o aluno '", nome_busca, "'."
+    FIM_SE
+FIM_PROCEDIMENTO
+
+PROCEDIMENTO listar_fichas(lista_principal_fichas):
+    ESCREVA "--- Lista de Todos os Treinos ---"
+    
+    SE lista_principal_fichas está vazia ENTÃO
+        ESCREVA "Nenhum treino cadastrado no momento."
+        RETORNE // Termina o procedimento
+    FIM_SE
+
+    // Itera pela LISTA principal e mostra um resumo
+    PARA CADA ficha (com índice i) EM lista_principal_fichas:
+        ESCREVA "--- Ficha ", i, " ---"
+        ESCREVA "Aluno: ", ficha["nome"]
+        ESCREVA "Objetivo: ", ficha["objetivo"]
+        ESCREVA "Nº de Exercícios: ", tamanho(ficha["exercicios"])
+    FIM_PARA
+
+    ESCREVA "Total de ", tamanho(lista_principal_fichas), " fichas cadastradas."
+FIM_PROCEDIMENTO
+
+// --- Funções de Interface ---
+
+FUNÇÃO mostrar_menu():
+    ESCREVA "--- Menu Academia ---"
+    ESCREVA "1. Registrar nova ficha de treino"
+    ESCREVA "2. Consultar ficha por aluno"
+    ESCREVA "3. Listar todos os treinos"
+    ESCREVA "4. Salvar e Sair"
+    LEIA escolha
+    RETORNE escolha
+FIM_FUNÇÃO
+
+// --- Programa Principal ---
+
+PROCEDIMENTO principal():
+    // Carrega os dados do arquivo ao iniciar
+    fichas_de_treino = carregar_dados()
+    ESCREVA "Bem-vindo! ", tamanho(fichas_de_treino), " fichas carregadas."
+
+    ENQUANTO VERDADEIRO:
+        escolha = mostrar_menu()
+
+        CASO escolha:
+            QUANDO '1':
+                registrar_ficha(fichas_de_treino)
+            QUANDO '2':
+                consultar_ficha(fichas_de_treino)
+            QUANDO '3':
+                listar_fichas(fichas_de_treino)
+            QUANDO '4':
+                // Salva os dados antes de sair
+                salvar_dados(fichas_de_treino)
+                ESCREVA "Obrigado por usar o sistema. Até logo!"
+                PARE_LOOP // Termina o programa
+            SENÃO:
+                ESCREVA "Opção inválida! Escolha de 1 a 4."
+        FIM_CASO
+    FIM_ENQUANTO
+FIM_PROCEDIMENTO
+
+// Ponto de entrada do programa
+INÍCIO
+    principal()
+FIM
